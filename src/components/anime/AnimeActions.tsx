@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Bookmark, Heart, Star } from "lucide-react";
+import { Bookmark, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Anime } from "@/lib/anime/types";
 import { syncFavorite, syncStatus } from "@/lib/firebase";
