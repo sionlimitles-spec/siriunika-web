@@ -52,13 +52,11 @@ export default function WatchPage(): React.ReactElement {
   }, [animeId, episodeId]);
 
   useEffect(() => {
-    // Simpan history & watched
     try {
       const watched = JSON.parse(localStorage.getItem(WATCHED_KEY) ?? "[]") as string[];
       setMarkedWatched(watched.includes(episodeId));
     } catch {}
     void syncHistory(animeId, episodeNumber, title, poster);
-    // Load komentar
     void fetchComments(episodeId).then(setComments).catch(() => {});
   }, [animeId, episodeNumber, title, poster, episodeId]);
 
@@ -128,6 +126,20 @@ export default function WatchPage(): React.ReactElement {
       </div>
 
       <VideoPlayer src={currentVideoSrc} poster={poster || undefined} title={`${title} - Ep ${episodeNumber}`} onEnded={() => autoNext && nextEpisode && goToEpisode(nextEpisode)} />
+
+      {/* UI Pilih Server */}
+      {streams.length > 0 && (
+        <div>
+          <p className="mb-2 text-xs font-bold uppercase tracking-wider text-content-muted">Pilih Server</p>
+          <div className="flex flex-wrap gap-2">
+            {streams.map((s, i) => (
+              <button key={`${s.server}-${i}`} onClick={() => setSelectedServer(i)} className={cn("rounded-lg border px-3 py-1.5 text-xs font-medium", selectedServer === i ? "border-accent bg-accent/15 text-accent" : "border-surface-border bg-surface text-content-muted hover:border-accent/40")}>
+                {s.server} · {s.quality}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-wrap items-center gap-2">
         {prevEpisode && (
