@@ -3,62 +3,93 @@
 import { useEffect, useState } from "react";
 import { Bookmark, Heart, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { Anime } from "@/lib/anime/types";
 
 const STATUS_OPTIONS = ["Sedang Ditonton", "Rencana", "Selesai", "Dihentikan"] as const;
 type WatchStatus = typeof STATUS_OPTIONS[number];
 
-export function AnimeActions({ animeId }: { animeId: number }): React.ReactElement {
+const SNAPSHOTS_KEY = "nexus-anime-snapshots";
+const FAVORITES_KEY = "nexus-anime-favorites";
+
+interface AnimeSnapshot {
+  id: number;
+  title: string;
+  imageUrl: string;
+  type: string;
+  episodes: number | null;
+}
+
+function saveSnapshot(anime: Anime): void {
+  try {
+    const all = JSON.parse(localStorage.getItem(SNAPSHOTS_KEY) ?? "{}") as Record<string, AnimeSnapshot>;
+    all[String(anime.id)] = {
+      id: anime.id,
+      title: anime.title,
+      imageUrl: anime.images.imageUrl,
+      type: anime.type,
+      episodes: anime.episodes,
+    };
+    localStorage.setItem(SNAPSHOTS_KEY, JSON.stringify(all));
+  } catch {}
+}
+
+export function AnimeActions({ anime }: { anime: Anime }): React.ReactElement {
   const [status, setStatus] = useState<WatchStatus | null>(null);
   const [rating, setRating] = useState<number>(0);
   const [isFavorite, setIsFavorite] = useState(false);
 
-  // Load from localStorage
   useEffect(() => {
     try {
-      const savedStatus = localStorage.getItem(`nexus-anime-status-${animeId}`);
+      const savedStatus = localStorage.getItem(`nexus-anime-status-${anime.id}`);
       if (savedStatus && STATUS_OPTIONS.includes(savedStatus as WatchStatus)) {
         setStatus(savedStatus as WatchStatus);
       }
-      const savedRating = localStorage.getItem(`nexus-anime-rating-${animeId}`);
+      const savedRating = localStorage.getItem(`nexus-anime-rated-${anime.id}`);
       if (savedRating) setRating(Number(savedRating));
-      
-      const favs = JSON.parse(localStorage.getItem("nexus-anime-favorites") ?? "[]") as number[];
-      setIsFavorite(favs.includes(animeId));
-    } catch {
-      // abaikan
-    }
-  }, [animeId]);
+      const favs = JSON.parse(localStorage.getItem(FAVORITES_KEY) ?? "[]") as number[];
+      setIsFavorite(favs.includes(anime.id));
+    } catch {}
+  }, [anime.id]);
 
   const handleStatusChange = (newStatus: WatchStatus) => {
     const next = status === newStatus ? null : newStatus;
     setStatus(next);
-    if (next) localStorage.setItem(`nexus-anime-status-${animeId}`, next);
-    else localStorage.removeItem(`nexus-anime-status-${animeId}`);
+    try {
+      if (next) {
+        localStorage.setItem(`nexus-anime-status-${anime.id}`, next);
+        saveSnapshot(anime);
+      } else {
+        localStorage.removeItem(`nexus-anime-status-${anime.id}`);
+      }
+    } catch {}
   };
 
   const handleRating = (score: number) => {
     const next = rating === score ? 0 : score;
     setRating(next);
-    if (next > 0) localStorage.setItem(`nexus-anime-rating-${animeId}`, String(next));
-    else localStorage.removeItem(`nexus-anime-rating-${animeId}`);
+    try {
+      if (next > 0) localStorage.setItem(`nexus-anime-rated-${anime.id}`, String(next));
+      else localStorage.removeItem(`nexus-anime-rated-${anime.id}`);
+    } catch {}
   };
 
   const toggleFavorite = () => {
     const next = !isFavorite;
     setIsFavorite(next);
     try {
-      let favs = JSON.parse(localStorage.getItem("nexus-anime-favorites") ?? "[]") as number[];
-      if (next) favs.push(animeId);
-      else favs = favs.filter((id) => id !== animeId);
-      localStorage.setItem("nexus-anime-favorites", JSON.stringify(favs));
-    } catch {
-      // abaikan
-    }
+      let favs = JSON.parse(localStorage.getItem(FAVORITES_KEY) ?? "[]") as number[];
+      if (next) {
+        favs.push(anime.id);
+        saveSnapshot(anime);
+      } else {
+        favs = favs.filter((id) => id !== anime.id);
+      }
+      localStorage.setItem(FAVORITES_KEY, JSON.stringify(favs));
+    } catch {}
   };
 
   return (
     <div className="space-y-4 rounded-xl border border-surface-border bg-surface-elevated p-4">
-      {/* Status */}
       <div>
         <p className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-content-muted">
           <Bookmark className="h-3.5 w-3.5" /> Status Tontonan
@@ -81,7 +112,6 @@ export function AnimeActions({ animeId }: { animeId: number }): React.ReactEleme
         </div>
       </div>
 
-      {/* Rating */}
       <div>
         <p className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-content-muted">
           <Star className="h-3.5 w-3.5" /> Rating Pribadi
@@ -107,7 +137,6 @@ export function AnimeActions({ animeId }: { animeId: number }): React.ReactEleme
         </div>
       </div>
 
-      {/* Favorite */}
       <button
         onClick={toggleFavorite}
         className={cn(
@@ -122,4 +151,4 @@ export function AnimeActions({ animeId }: { animeId: number }): React.ReactEleme
       </button>
     </div>
   );
-      }
+}
