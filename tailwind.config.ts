@@ -10,18 +10,18 @@ const config: Config = {
     extend: {
       colors: {
         accent: {
-          DEFAULT: "var(--accent)",
-          foreground: "var(--accent-foreground)",
-          muted: "var(--accent-muted)",
+          DEFAULT: "rgb(var(--accent) / <alpha-value>)",
+          foreground: "rgb(var(--accent-foreground) / <alpha-value>)",
+          muted: "rgb(var(--accent-muted) / 0.25)",
         },
         surface: {
-          DEFAULT: "var(--surface)",
-          elevated: "var(--surface-elevated)",
-          border: "var(--surface-border)",
+          DEFAULT: "rgb(var(--surface) / <alpha-value>)",
+          elevated: "rgb(var(--surface-elevated) / <alpha-value>)",
+          border: "rgb(var(--surface-border) / 0.08)",
         },
         content: {
-          DEFAULT: "var(--content)",
-          muted: "var(--content-muted)",
+          DEFAULT: "rgb(var(--content) / <alpha-value>)",
+          muted: "rgb(var(--content-muted) / <alpha-value>)",
         },
       },
       fontFamily: {
