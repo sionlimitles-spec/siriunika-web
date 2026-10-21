@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import {
   ArrowRight,
   Check,
+  Music2,
   Palette,
   Search,
   Sparkles,
+  Volume2,
   X,
 } from "lucide-react";
 import { categories, tools } from "@/config/config";
@@ -17,6 +19,14 @@ import {
   cn,
   isAccentColor,
 } from "@/lib/utils";
+
+function dispatchSettings(): void {
+  try {
+    window.dispatchEvent(new Event("nexus-settings"));
+  } catch {
+    // abaikan
+  }
+}
 
 // ===== Command Palette =====
 export function CommandPalette({
@@ -76,7 +86,10 @@ export function CommandPalette({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-3 border-b border-surface-border px-4">
-          <Search className="h-4 w-4 shrink-0 text-content-muted" aria-hidden="true" />
+          <Search
+            className="h-4 w-4 shrink-0 text-content-muted"
+            aria-hidden="true"
+          />
           <input
             ref={inputRef}
             value={query}
@@ -98,7 +111,7 @@ export function CommandPalette({
         <ul className="max-h-[50vh] overflow-y-auto p-2" role="listbox">
           {results.length === 0 ? (
             <li className="px-3 py-6 text-center text-sm text-content-muted">
-              Tidak ada hasil untuk “{query}”.
+              Tidak ada hasil untuk &ldquo;{query}&rdquo;.
             </li>
           ) : (
             results.map((item) => (
@@ -126,8 +139,9 @@ export function CommandPalette({
         </ul>
 
         <div className="border-t border-surface-border px-4 py-2 text-[10px] text-content-muted">
-          Tekan <kbd className="rounded bg-surface px-1 py-0.5">Esc</kbd> untuk menutup
-          &middot; <kbd className="rounded bg-surface px-1 py-0.5">Ctrl K</kbd> untuk
+          Tekan <kbd className="rounded bg-surface px-1 py-0.5">Esc</kbd> untuk
+          menutup &middot;{" "}
+          <kbd className="rounded bg-surface px-1 py-0.5">Ctrl K</kbd> untuk
           buka/tutup
         </div>
       </div>
@@ -192,6 +206,8 @@ export function SettingsSheet({
   const [accent, setAccent] = useState<AccentColor>("red");
   const [animations, setAnimations] = useState(true);
   const [particles, setParticles] = useState(false);
+  const [autoplay, setAutoplay] = useState(false);
+  const [clickSound, setClickSound] = useState(false);
 
   useEffect(() => {
     try {
@@ -200,8 +216,11 @@ export function SettingsSheet({
         setAccent(stored);
         document.documentElement.dataset.accent = stored;
       }
-      if (localStorage.getItem("nexus-animations") === "off") setAnimations(false);
+      if (localStorage.getItem("nexus-animations") === "off")
+        setAnimations(false);
       if (localStorage.getItem("nexus-particles") === "on") setParticles(true);
+      if (localStorage.getItem("nexus-autoplay") === "on") setAutoplay(true);
+      if (localStorage.getItem("nexus-sound") === "on") setClickSound(true);
     } catch {
       // abaikan
     }
@@ -222,23 +241,18 @@ export function SettingsSheet({
     }
   }, []);
 
-  const updateAnimations = useCallback((value: boolean) => {
-    setAnimations(value);
-    try {
-      localStorage.setItem("nexus-animations", value ? "on" : "off");
-    } catch {
-      // abaikan
-    }
-  }, []);
-
-  const updateParticles = useCallback((value: boolean) => {
-    setParticles(value);
-    try {
-      localStorage.setItem("nexus-particles", value ? "on" : "off");
-    } catch {
-      // abaikan
-    }
-  }, []);
+  const writeFlag = useCallback(
+    (key: string, value: boolean, setter: (v: boolean) => void): void => {
+      setter(value);
+      try {
+        localStorage.setItem(key, value ? "on" : "off");
+      } catch {
+        // abaikan
+      }
+      dispatchSettings();
+    },
+    [],
+  );
 
   return (
     <div
@@ -255,7 +269,9 @@ export function SettingsSheet({
         <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-surface-border sm:hidden" />
 
         <div className="flex items-center justify-between">
-          <h2 className="font-display text-lg font-bold text-content">Pengaturan</h2>
+          <h2 className="font-display text-lg font-bold text-content">
+            Pengaturan
+          </h2>
           <button
             type="button"
             onClick={onClose}
@@ -290,7 +306,10 @@ export function SettingsSheet({
                   >
                     <span className={cn("h-7 w-7 rounded-lg", item.swatch)} />
                     {active ? (
-                      <Check className="absolute h-4 w-4 text-white" aria-hidden="true" />
+                      <Check
+                        className="absolute h-4 w-4 text-white"
+                        aria-hidden="true"
+                      />
                     ) : null}
                   </button>
                 );
@@ -308,15 +327,42 @@ export function SettingsSheet({
                 label="Animasi"
                 description="Animasi transisi dan hover"
                 checked={animations}
-                onChange={updateAnimations}
+                onChange={(v) =>
+                  writeFlag("nexus-animations", v, setAnimations)
+                }
               />
               <ToggleRow
                 label="Partikel background"
-                description="Efek partikel ringan (aktif di Tahap 2)"
+                description="Efek partikel ringan di latar"
                 checked={particles}
-                onChange={updateParticles}
+                onChange={(v) => writeFlag("nexus-particles", v, setParticles)}
               />
             </div>
+          </section>
+
+          <section aria-label="Audio">
+            <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-content">
+              <Volume2 className="h-4 w-4 text-accent" aria-hidden="true" />
+              Audio
+            </div>
+            <div className="space-y-2">
+              <ToggleRow
+                label="Musik otomatis"
+                description="Coba lanjutkan musik saat membuka situs (browser bisa memblokir)"
+                checked={autoplay}
+                onChange={(v) => writeFlag("nexus-autoplay", v, setAutoplay)}
+              />
+              <ToggleRow
+                label="Efek suara klik"
+                description="Bunyi halus saat menekan tombol"
+                checked={clickSound}
+                onChange={(v) => writeFlag("nexus-sound", v, setClickSound)}
+              />
+            </div>
+            <p className="mt-2 flex items-center gap-1.5 text-[11px] text-content-muted">
+              <Music2 className="h-3 w-3" aria-hidden="true" />
+              Tambah lagu lewat playlist di konfigurasi.
+            </p>
           </section>
         </div>
       </div>
