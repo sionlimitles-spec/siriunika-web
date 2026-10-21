@@ -15,6 +15,7 @@ import {
   orderBy,
   getDocs,
   limit,
+  where, // Tambahan: untuk filter komentar berdasarkan epId
 } from "firebase/firestore";
 
 const config = {
@@ -26,7 +27,6 @@ const config = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Cek apakah kredensial Firebase sudah diisi
 export const isFirebaseConfigured = !!config.apiKey;
 
 function getFirebase() {
@@ -35,7 +35,6 @@ function getFirebase() {
   return { auth: getAuth(app), db: getFirestore(app) };
 }
 
-// Helper untuk memastikan user sudah login (Anonymous)
 async function getDbAndUid() {
   const fb = getFirebase();
   if (!fb) return null;
@@ -49,7 +48,13 @@ async function getDbAndUid() {
   }
 }
 
-// ===== FUNGSI SINKRONISASI =====
+// Tipe data komentar agar TypeScript tidak protes
+export interface CommentData {
+  id: string;
+  text: string;
+  userId: string;
+  createdAt: { seconds: number } | null;
+}
 
 export async function syncFavorite(id: number, isFav: boolean, snap: Record<string, unknown>) {
   const conn = await getDbAndUid();
@@ -98,13 +103,18 @@ export async function sendComment(epId: string, text: string) {
   });
 }
 
-export async function fetchComments(epId: string) {
+// Diperbaiki: Mengembalikan Promise<CommentData[]> agar sesuai dengan state di page.tsx
+export async function fetchComments(epId: string): Promise<CommentData[]> {
   const conn = await getDbAndUid();
   if (!conn) return [];
-  const q = query(collection(conn.db, "comments"), orderBy("createdAt", "desc"), limit(50));
+  
+  const q = query(
+    collection(conn.db, "comments"),
+    where("epId", "==", epId),
+    orderBy("createdAt", "desc"),
+    limit(50)
+  );
+  
   const snap = await getDocs(q);
-  return snap.docs
-    .map(d => ({ id: d.id, ...d.data() }))
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .filter((c: any) => c.epId === epId);
-    }
+  return snap.docs.map(d => ({ id: d.id, ...d.data() } as CommentData));
+}
