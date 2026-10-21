@@ -1,4 +1,4 @@
-import { initializeApp, getApps } from "firebase/app";
+import { initializeApp, getApps, getApp } from "firebase/app";
 import {
   getAuth,
   signInAnonymously,
@@ -15,7 +15,7 @@ import {
   orderBy,
   getDocs,
   limit,
-  where, // Tambahan: untuk filter komentar berdasarkan epId
+  where,
 } from "firebase/firestore";
 
 const config = {
@@ -31,7 +31,8 @@ export const isFirebaseConfigured = !!config.apiKey;
 
 function getFirebase() {
   if (!isFirebaseConfigured) return null;
-  const app = getApps().length === 0 ? initializeApp(config) : getApps()[0];
+  // Perbaikan: Gunakan getApp() untuk menghindari error "possibly undefined"
+  const app = getApps().length === 0 ? initializeApp(config) : getApp();
   return { auth: getAuth(app), db: getFirestore(app) };
 }
 
@@ -48,7 +49,7 @@ async function getDbAndUid() {
   }
 }
 
-// Tipe data komentar agar TypeScript tidak protes
+// Tipe data komentar
 export interface CommentData {
   id: string;
   text: string;
@@ -103,7 +104,6 @@ export async function sendComment(epId: string, text: string) {
   });
 }
 
-// Diperbaiki: Mengembalikan Promise<CommentData[]> agar sesuai dengan state di page.tsx
 export async function fetchComments(epId: string): Promise<CommentData[]> {
   const conn = await getDbAndUid();
   if (!conn) return [];
