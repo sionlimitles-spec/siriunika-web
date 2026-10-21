@@ -244,8 +244,7 @@ export function useAudioPlayer(): AudioPlayerApi {
   const play = useCallback((): void => {
     const audio = audioRef.current;
     if (!audio) return;
-
-    // FIX: Cek currentTrack dulu agar aman dari strict TS
+    
     const currentTrack = playlist[index];
     if (!audio.src && currentTrack) {
       audio.src = currentTrack.src;
