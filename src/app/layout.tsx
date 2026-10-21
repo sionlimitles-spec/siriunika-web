@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Orbitron, Rajdhani } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { Header } from "@/components/Header";
+import { MusicPlayer } from "@/components/MusicPlayer";
+import { ClientExtras } from "@/components/ClientExtras";
 import "./globals.css";
 
 const orbitron = Orbitron({
@@ -54,10 +56,12 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <div className="relative flex min-h-dvh flex-col">
+            <ClientExtras />
             <Header />
             <main className="mx-auto w-full max-w-7xl flex-1 px-4 pb-28 pt-4 sm:px-6">
               {children}
             </main>
+            <MusicPlayer />
           </div>
         </ThemeProvider>
       </body>
