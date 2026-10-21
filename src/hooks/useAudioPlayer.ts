@@ -76,6 +76,9 @@ export function useAudioPlayer(): AudioPlayerApi {
   const indexRef = useRef(0);
   const shuffleRef = useRef(false);
   const repeatRef = useRef<RepeatMode>("off");
+  const loadIndexRef = useRef<((i: number, autoplay: boolean) => void) | null>(
+    null,
+  );
 
   const [index, setIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -107,8 +110,8 @@ export function useAudioPlayer(): AudioPlayerApi {
       const found = playlist.findIndex((t) => t.id === persisted.trackId);
       if (found >= 0) startIndex = found;
     }
-    
-    // FIX: Simpan ke variabel dulu agar TypeScript yakin datanya ada
+
+    // FIX: Simpan ke variabel dulu agar TypeScript strict yakin datanya ada
     const initialTrack = playlist[startIndex];
     if (initialTrack) {
       indexRef.current = startIndex;
@@ -194,12 +197,7 @@ export function useAudioPlayer(): AudioPlayerApi {
       audio.removeEventListener("error", onError);
       audio.src = "";
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const loadIndexRef = useRef<((i: number, autoplay: boolean) => void) | null>(
-    null,
-  );
 
   // Persist state changes
   useEffect(() => {
@@ -236,9 +234,7 @@ export function useAudioPlayer(): AudioPlayerApi {
       navigator.mediaSession.metadata = new MediaMetadata({
         title: track.title,
         artist: track.artist,
-        artwork: [
-          { src: track.cover, sizes: "512x512", type: "image/jpeg" },
-        ],
+        artwork: [{ src: track.cover, sizes: "512x512", type: "image/jpeg" }],
       });
     } catch {
       // MediaMetadata tidak didukung; abaikan
@@ -248,7 +244,7 @@ export function useAudioPlayer(): AudioPlayerApi {
   const play = useCallback((): void => {
     const audio = audioRef.current;
     if (!audio) return;
-    
+
     // FIX: Cek currentTrack dulu agar aman dari strict TS
     const currentTrack = playlist[index];
     if (!audio.src && currentTrack) {
@@ -291,8 +287,7 @@ export function useAudioPlayer(): AudioPlayerApi {
       audio.currentTime = 0;
       return;
     }
-    const prevIndex =
-      (indexRef.current - 1 + tracks.length) % tracks.length;
+    const prevIndex = (indexRef.current - 1 + tracks.length) % tracks.length;
     loadIndexRef.current?.(prevIndex, true);
   }, []);
 
