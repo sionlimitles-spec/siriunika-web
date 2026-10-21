@@ -69,6 +69,7 @@ function mapAnime(data: any): Anime {
 
 export class JikanProvider implements AnimeProvider {
   async getTrending(): Promise<Anime[]> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data = await fetchWithRetry<{ data: any[] }>(
       `${BASE_URL}/top/anime?filter=airing&limit=12`,
     );
@@ -76,6 +77,7 @@ export class JikanProvider implements AnimeProvider {
   }
 
   async getLatest(): Promise<Anime[]> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data = await fetchWithRetry<{ data: any[] }>(
       `${BASE_URL}/seasons/now?limit=12`,
     );
@@ -90,9 +92,8 @@ export class JikanProvider implements AnimeProvider {
     const days = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
     const schedule: Record<string, Anime[]> = {};
     
-    // Ambil data jadwal untuk hari ini (untuk menghemat rate limit)
-    // Di produksi bisa di-loop semua hari jika perlu
     for (const day of days) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const data = await fetchWithRetry<{ data: any[] }>(
         `${BASE_URL}/schedules?filter=${day}&limit=12`,
       );
@@ -104,6 +105,7 @@ export class JikanProvider implements AnimeProvider {
   }
 
   async search(query: string, page = 1, limit = 20): Promise<Anime[]> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data = await fetchWithRetry<{ data: any[] }>(
       `${BASE_URL}/anime?q=${encodeURIComponent(query)}&page=${page}&limit=${limit}`,
     );
@@ -112,6 +114,7 @@ export class JikanProvider implements AnimeProvider {
 
   async getDetail(id: number): Promise<Anime | null> {
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const data = await fetchWithRetry<{ data: any }>(
         `${BASE_URL}/anime/${id}/full`,
       );
@@ -122,6 +125,7 @@ export class JikanProvider implements AnimeProvider {
   }
 
   async getEpisodes(id: number, page = 1): Promise<Episode[]> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data = await fetchWithRetry<{ data: any[] }>(
       `${BASE_URL}/anime/${id}/episodes?page=${page}`,
     );
@@ -138,16 +142,17 @@ export class JikanProvider implements AnimeProvider {
   }
 
   async getRecommendations(id: number): Promise<Anime[]> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data = await fetchWithRetry<{ data: { entry: any }[] }>(
       `${BASE_URL}/anime/${id}/recommendations`,
     );
     return data.data.slice(0, 12).map((item) => mapAnime(item.entry));
   }
 
-  async getStreamLinks(episodeId: string): Promise<StreamLink[]> {
+  async getStreamLinks(_episodeId: string): Promise<StreamLink[]> {
     // Jikan TIDAK menyediakan link streaming.
-    // Di sini kita bisa memanggil API eksternal (jika ANIME_API_BASE_URL diisi).
-    // Untuk sekarang, kita return array kosong agar UI bisa menampilkan "Server tidak tersedia".
+    // Parameter diberi garis bawah (_) agar TypeScript tidak protes "unused".
+    // Nanti jika kamu punya API streaming sendiri, panggil di sini.
     return [];
   }
 }
