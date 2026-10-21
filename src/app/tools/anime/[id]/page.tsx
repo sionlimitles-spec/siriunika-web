@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Calendar, PlayCircle, Star, Tv } from "lucide-react";
+import { ArrowLeft, Calendar, PlayCircle, Star, Tv, Bookmark } from "lucide-react";
 import { getAnimeProvider } from "@/lib/anime";
 import { AnimeActions } from "@/components/anime/AnimeActions";
 import { AnimeCard } from "@/components/anime/AnimeCard";
@@ -11,7 +11,6 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
-// Generate Metadata dinamis untuk SEO
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params;
   const provider = getAnimeProvider();
@@ -21,7 +20,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return { title: anime.title, description: anime.synopsis?.slice(0, 160) };
 }
 
-export const revalidate = 86400; // Cache 24 jam
+export const revalidate = 86400;
 
 export default async function AnimeDetailPage({ params }: PageProps): Promise<React.ReactElement> {
   const { id } = await params;
@@ -38,20 +37,24 @@ export default async function AnimeDetailPage({ params }: PageProps): Promise<Re
 
   if (!anime) notFound();
 
-  const firstEpisode = episodes[0];
-
   return (
     <div className="space-y-8 pb-10">
-      {/* Tombol Kembali */}
-      <Link
-        href="/tools/anime"
-        className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-surface-border bg-surface-elevated px-3 py-2 text-sm font-medium text-content-muted transition-colors hover:border-accent/40 hover:text-accent"
-      >
-        <ArrowLeft className="h-4 w-4" /> Kembali ke Beranda Anime
-      </Link>
+      <div className="flex items-center justify-between">
+        <Link
+          href="/tools/anime"
+          className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-surface-border bg-surface-elevated px-3 py-2 text-sm font-medium text-content-muted transition-colors hover:border-accent/40 hover:text-accent"
+        >
+          <ArrowLeft className="h-4 w-4" /> Kembali
+        </Link>
+        <Link
+          href="/tools/anime/library"
+          className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-surface-border bg-surface-elevated px-3 py-2 text-sm font-medium text-content-muted transition-colors hover:border-accent/40 hover:text-accent"
+        >
+          <Bookmark className="h-4 w-4" /> Daftar Saya
+        </Link>
+      </div>
 
       <div className="grid gap-6 md:grid-cols-[300px_1fr]">
-        {/* Kolom Kiri: Poster & Aksi */}
         <div className="space-y-4">
           <div className="relative aspect-[3/4] w-full overflow-hidden rounded-2xl border border-surface-border shadow-2xl">
             <Image
@@ -63,10 +66,9 @@ export default async function AnimeDetailPage({ params }: PageProps): Promise<Re
               className="object-cover"
             />
           </div>
-          <AnimeActions animeId={anime.id} />
+          <AnimeActions anime={anime} />
         </div>
 
-        {/* Kolom Kanan: Info & Sinopsis */}
         <div className="space-y-6">
           <div>
             <h1 className="font-display text-2xl font-bold text-content sm:text-3xl">
@@ -97,7 +99,7 @@ export default async function AnimeDetailPage({ params }: PageProps): Promise<Re
           <div>
             <h2 className="mb-2 font-display text-lg font-bold text-content">Sinopsis</h2>
             <p className="text-sm leading-relaxed text-content-muted">
-              {anime.synopsis ?? "Sinopsis belum tersedia dalam bahasa Inggris/Indonesia."}
+              {anime.synopsis ?? "Sinopsis belum tersedia."}
             </p>
           </div>
 
@@ -105,17 +107,13 @@ export default async function AnimeDetailPage({ params }: PageProps): Promise<Re
             <h2 className="mb-2 font-display text-lg font-bold text-content">Genre</h2>
             <div className="flex flex-wrap gap-2">
               {anime.genres.map((genre) => (
-                <span
-                  key={genre}
-                  className="rounded-full border border-surface-border bg-surface px-3 py-1 text-xs font-medium text-content-muted"
-                >
+                <span key={genre} className="rounded-full border border-surface-border bg-surface px-3 py-1 text-xs font-medium text-content-muted">
                   {genre}
                 </span>
               ))}
             </div>
           </div>
 
-          {/* Daftar Episode */}
           <div>
             <h2 className="mb-3 font-display text-lg font-bold text-content">Daftar Episode</h2>
             {episodes.length > 0 ? (
@@ -138,7 +136,6 @@ export default async function AnimeDetailPage({ params }: PageProps): Promise<Re
         </div>
       </div>
 
-      {/* Rekomendasi */}
       {recommendations.length > 0 && (
         <section className="pt-6 border-t border-surface-border">
           <h2 className="mb-3 font-display text-lg font-bold text-content">Rekomendasi Anime Serupa</h2>
@@ -151,4 +148,4 @@ export default async function AnimeDetailPage({ params }: PageProps): Promise<Re
       )}
     </div>
   );
-          }
+}
