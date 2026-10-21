@@ -4,38 +4,14 @@ import { useEffect, useState } from "react";
 import { Bookmark, Heart, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Anime } from "@/lib/anime/types";
+import { syncFavorite, syncStatus } from "@/lib/firebase";
 
 const STATUS_OPTIONS = ["Sedang Ditonton", "Rencana", "Selesai", "Dihentikan"] as const;
 type WatchStatus = typeof STATUS_OPTIONS[number];
-
-const SNAPSHOTS_KEY = "nexus-anime-snapshots";
 const FAVORITES_KEY = "nexus-anime-favorites";
-
-interface AnimeSnapshot {
-  id: number;
-  title: string;
-  imageUrl: string;
-  type: string;
-  episodes: number | null;
-}
-
-function saveSnapshot(anime: Anime): void {
-  try {
-    const all = JSON.parse(localStorage.getItem(SNAPSHOTS_KEY) ?? "{}") as Record<string, AnimeSnapshot>;
-    all[String(anime.id)] = {
-      id: anime.id,
-      title: anime.title,
-      imageUrl: anime.images.imageUrl,
-      type: anime.type,
-      episodes: anime.episodes,
-    };
-    localStorage.setItem(SNAPSHOTS_KEY, JSON.stringify(all));
-  } catch {}
-}
 
 export function AnimeActions({ anime }: { anime: Anime }): React.ReactElement {
   const [status, setStatus] = useState<WatchStatus | null>(null);
-  const [rating, setRating] = useState<number>(0);
   const [isFavorite, setIsFavorite] = useState(false);
 
   useEffect(() => {
@@ -44,8 +20,6 @@ export function AnimeActions({ anime }: { anime: Anime }): React.ReactElement {
       if (savedStatus && STATUS_OPTIONS.includes(savedStatus as WatchStatus)) {
         setStatus(savedStatus as WatchStatus);
       }
-      const savedRating = localStorage.getItem(`nexus-anime-rated-${anime.id}`);
-      if (savedRating) setRating(Number(savedRating));
       const favs = JSON.parse(localStorage.getItem(FAVORITES_KEY) ?? "[]") as number[];
       setIsFavorite(favs.includes(anime.id));
     } catch {}
@@ -55,21 +29,12 @@ export function AnimeActions({ anime }: { anime: Anime }): React.ReactElement {
     const next = status === newStatus ? null : newStatus;
     setStatus(next);
     try {
-      if (next) {
-        localStorage.setItem(`nexus-anime-status-${anime.id}`, next);
-        saveSnapshot(anime);
-      } else {
-        localStorage.removeItem(`nexus-anime-status-${anime.id}`);
-      }
-    } catch {}
-  };
-
-  const handleRating = (score: number) => {
-    const next = rating === score ? 0 : score;
-    setRating(next);
-    try {
-      if (next > 0) localStorage.setItem(`nexus-anime-rated-${anime.id}`, String(next));
-      else localStorage.removeItem(`nexus-anime-rated-${anime.id}`);
+      if (next) localStorage.setItem(`nexus-anime-status-${anime.id}`, next);
+      else localStorage.removeItem(`nexus-anime-status-${anime.id}`);
+      
+      // Sync ke Firebase (berjalan di background)
+      const snap = { id: anime.id, title: anime.title, imageUrl: anime.images.imageUrl, type: anime.type };
+      void syncStatus(anime.id, next, snap);
     } catch {}
   };
 
@@ -78,13 +43,13 @@ export function AnimeActions({ anime }: { anime: Anime }): React.ReactElement {
     setIsFavorite(next);
     try {
       let favs = JSON.parse(localStorage.getItem(FAVORITES_KEY) ?? "[]") as number[];
-      if (next) {
-        favs.push(anime.id);
-        saveSnapshot(anime);
-      } else {
-        favs = favs.filter((id) => id !== anime.id);
-      }
+      if (next) favs.push(anime.id);
+      else favs = favs.filter((id) => id !== anime.id);
       localStorage.setItem(FAVORITES_KEY, JSON.stringify(favs));
+
+      // Sync ke Firebase
+      const snap = { id: anime.id, title: anime.title, imageUrl: anime.images.imageUrl, type: anime.type };
+      void syncFavorite(anime.id, next, snap);
     } catch {}
   };
 
@@ -109,31 +74,6 @@ export function AnimeActions({ anime }: { anime: Anime }): React.ReactElement {
               {opt}
             </button>
           ))}
-        </div>
-      </div>
-
-      <div>
-        <p className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-content-muted">
-          <Star className="h-3.5 w-3.5" /> Rating Pribadi
-        </p>
-        <div className="flex items-center gap-1">
-          {Array.from({ length: 10 }).map((_, i) => {
-            const score = i + 1;
-            return (
-              <button
-                key={score}
-                onClick={() => handleRating(score)}
-                className={cn(
-                  "flex h-7 w-7 items-center justify-center rounded-md text-xs font-bold transition-colors",
-                  rating >= score
-                    ? "bg-accent text-white"
-                    : "bg-surface text-content-muted hover:bg-accent/20 hover:text-accent"
-                )}
-              >
-                {score}
-              </button>
-            );
-          })}
         </div>
       </div>
 
