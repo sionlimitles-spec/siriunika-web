@@ -1,78 +1,72 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft, Clapperboard, Clock, Sparkles } from "lucide-react";
+import { Dice5, Clock } from "lucide-react";
+import { getAnimeProvider } from "@/lib/anime";
+import { AnimeHeroSlider } from "@/components/anime/AnimeHeroSlider";
+import { AnimeCard } from "@/components/anime/AnimeCard";
 
 export const metadata: Metadata = {
   title: "Nonton Anime",
-  description: "Streaming anime — segera hadir di All Tools Nexus.",
+  description: "Streaming anime terbaru dan populer di All Tools Nexus.",
 };
 
-export default function AnimePlaceholderPage(): React.ReactElement {
-  return (
-    <div className="mx-auto max-w-2xl">
-      <Link
-        href="/"
-        className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-surface-border bg-surface-elevated/60 px-3 py-2 text-sm font-medium text-content-muted transition-colors hover:border-accent/40 hover:text-accent"
-      >
-        <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-        Kembali ke Home
-      </Link>
+// Cache halaman selama 1 jam
+export const revalidate = 3600;
 
-      <div className="glass mt-4 overflow-hidden">
-        <div className="relative border-b border-surface-border bg-gradient-to-br from-accent/20 via-accent/5 to-transparent p-8 text-center">
-          <div
-            className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-accent/15 text-accent ring-1 ring-accent/25"
-            aria-hidden="true"
-          >
-            <Clapperboard className="h-8 w-8" />
-          </div>
-          <h1 className="mt-4 font-display text-2xl font-bold text-content sm:text-3xl">
-            Nonton Anime
+export default async function AnimeHomePage(): Promise<React.ReactElement> {
+  const provider = getAnimeProvider();
+  
+  // Ambil data paralel
+  const [trending, latest] = await Promise.all([
+    provider.getTrending(),
+    provider.getLatest(),
+  ]);
+
+  // ID acak sederhana (MAL ID range 1 - 50000+)
+  const randomId = Math.floor(Math.random() * 50000) + 1;
+
+  return (
+    <div className="space-y-8 pb-10">
+      {/* Header Halaman */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="font-display text-2xl font-bold text-content sm:text-3xl">
+            Beranda Anime
           </h1>
           <p className="mt-1 text-sm text-content-muted">
-            Tool streaming anime sedang dalam pengembangan
+            Jelajahi anime musim ini dan trending.
           </p>
         </div>
-
-        <div className="space-y-4 p-6 sm:p-8">
-          <div className="flex items-start gap-3 rounded-xl border border-surface-border bg-surface p-3">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent/15 text-accent">
-              <Clock className="h-4 w-4" aria-hidden="true" />
-            </span>
-            <div>
-              <p className="text-sm font-semibold text-content">
-                Status: Segera Hadir
-              </p>
-              <p className="mt-0.5 text-xs text-content-muted">
-                Halaman ini adalah placeholder. Fitur lengkap akan dibangun
-                pada tahap berikutnya.
-              </p>
-            </div>
-          </div>
-
-          <div>
-            <p className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-accent">
-              <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
-              Yang akan hadir
-            </p>
-            <ul className="space-y-1.5 text-sm text-content-muted">
-              <li>Beranda dengan hero slider trending & jadwal rilis</li>
-              <li>Detail anime: poster, sinopsis, trailer, karakter</li>
-              <li>Player dengan PiP, kecepatan putar, dan mode teater</li>
-              <li>Daftar tontonan pribadi (sedang ditonton, rencana, selesai)</li>
-              <li>Komentar per episode dan daftar favorit tersinkron</li>
-            </ul>
-          </div>
-
-          <Link
-            href="/"
-            className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground transition-opacity hover:opacity-90"
-          >
-            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-            Jelajahi tool lain
-          </Link>
-        </div>
+        <Link
+          href={`/tools/anime/${randomId}`}
+          className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-accent/15 px-4 py-2 text-sm font-semibold text-accent ring-1 ring-accent/30 transition-colors hover:bg-accent hover:text-white"
+        >
+          <Dice5 className="h-4 w-4" /> Anime Acak
+        </Link>
       </div>
+
+      {/* Trending Slider */}
+      <section aria-labelledby="trending-heading">
+        <h2 id="trending-heading" className="mb-3 font-display text-lg font-bold text-content">
+          Trending Ming Ini
+        </h2>
+        <AnimeHeroSlider animes={trending} />
+      </section>
+
+      {/* Latest Grid */}
+      <section aria-labelledby="latest-heading">
+        <div className="mb-3 flex items-center gap-2">
+          <Clock className="h-5 w-5 text-accent" />
+          <h2 id="latest-heading" className="font-display text-lg font-bold text-content">
+            Rilis Terbaru
+          </h2>
+        </div>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+          {latest.map((anime) => (
+            <AnimeCard key={anime.id} anime={anime} />
+          ))}
+        </div>
+      </section>
     </div>
   );
 }
