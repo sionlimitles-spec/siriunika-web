@@ -107,10 +107,13 @@ export function useAudioPlayer(): AudioPlayerApi {
       const found = playlist.findIndex((t) => t.id === persisted.trackId);
       if (found >= 0) startIndex = found;
     }
-    if (playlist[startIndex]) {
+    
+    // FIX: Simpan ke variabel dulu agar TypeScript yakin datanya ada
+    const initialTrack = playlist[startIndex];
+    if (initialTrack) {
       indexRef.current = startIndex;
       setIndex(startIndex);
-      audio.src = playlist[startIndex].src;
+      audio.src = initialTrack.src;
       audio.currentTime = persisted.position;
     }
 
@@ -179,7 +182,6 @@ export function useAudioPlayer(): AudioPlayerApi {
     audio.addEventListener("ended", onEnded);
     audio.addEventListener("error", onError);
 
-    // Expose loadIndex via ref for external callers
     loadIndexRef.current = loadIndex;
 
     return () => {
@@ -246,8 +248,11 @@ export function useAudioPlayer(): AudioPlayerApi {
   const play = useCallback((): void => {
     const audio = audioRef.current;
     if (!audio) return;
-    if (!audio.src && playlist[index]) {
-      audio.src = playlist[index].src;
+    
+    // FIX: Cek currentTrack dulu agar aman dari strict TS
+    const currentTrack = playlist[index];
+    if (!audio.src && currentTrack) {
+      audio.src = currentTrack.src;
     }
     void audio.play().catch(() => setIsPlaying(false));
   }, [index]);
